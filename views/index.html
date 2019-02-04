@@ -1,0 +1,52 @@
+<!-- This is a static file -->
+<!-- served from your routes in server.js -->
+
+<!-- You might want to try something fancier: -->
+<!-- html/nunjucks docs: https://mozilla.github.io/nunjucks/ -->
+<!-- pug: https://pugjs.org/ -->
+<!-- haml: http://haml.info/ -->
+<!-- hbs(handlebars): http://handlebarsjs.com/ -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Nightcore Radio</title>
+    <meta name="description" content="Currently Playing...">
+    <link id="favicon" rel="icon" href="https://cdn.glitch.com/project-avatar/9b10e4ad-825a-4a17-9061-7acdf3fdd9cc.png?1549101666525" type="image/x-icon">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/style">
+    
+  </head>
+  <body>
+        <header>
+            <h2>Nightcore Radio - Currently Playing</h2>
+            <h3 id="name">Awaiting Infomation...</h3>
+        </header>
+        <main>
+            <h4 id="time">[0:00] - [0:00]</h4>
+        </main>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+        <script>
+          $(function () {
+            var socket = io();
+            socket.on('update', function(radio){
+              console.log("recieved: " + JSON.stringify(radio));
+              radio.time = (radio.time)/1000;
+              radio.timeLength = radio.timeLength;
+              let length = [Math.floor((radio.timeLength / 60) % 60),Math.floor((radio.timeLength-2)%60)];
+              let time = [Math.floor(radio.time/60),Math.floor(radio.time%60)];
+              document.getElementById("name").innerHTML = radio.name;
+              if(length[1]<=9) length[1] = "0"+length[1];
+              if(time[1]<=9) time[1] = "0"+time[1];
+              document.getElementById("time").innerHTML = "["+time[0]+":"+time[1]+"] - ["+length[0]+":"+length[1]+"]";
+            });
+          });
+        </script>
+  </body>
+</html>
