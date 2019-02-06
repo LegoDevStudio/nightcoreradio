@@ -9,7 +9,7 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
 //DATA FOR WEBPAGE
-var radio = {"name":"Not Playing","timeLength":0,"time":0};
+var radio = {"name":"Not Playing","timeLength":0,"time":0,"url":""};
 var playing = false;
 var vcConnection = null;
 var dispatcher = null;
@@ -67,6 +67,7 @@ function play(connection,m) {
     dispatcher = connection.playStream(ytdl(song[0], { filter : 'audioonly' }), streamOptions);
     radio.timeLength = song[2];
     radio.name = song[1];
+    radio.url = song[0];
     var timer = setInterval(() => {radio.time = dispatcher.time;},1000);
     dispatcher.on('error', e => {
         //Catch any errors that may arise, Disconnect and alert that music cannot continue.
