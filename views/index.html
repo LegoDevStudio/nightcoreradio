@@ -29,6 +29,10 @@
         </header>
         <main>
             <h4 id="time">[0:00] - [0:00]</h4>
+            <video controls autoplay>
+              <source id="sor" src="" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
         </main>
         <script src="/socket.io/socket.io.js"></script>
         <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -45,6 +49,7 @@
               if(length[1]<=9) length[1] = "0"+length[1];
               if(time[1]<=9) time[1] = "0"+time[1];
               document.getElementById("time").innerHTML = "["+time[0]+":"+time[1]+"] - ["+length[0]+":"+length[1]+"]";
+              document.getElementById("sor").src = radio.url
             });
           });
         </script>
