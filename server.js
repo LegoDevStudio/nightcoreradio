@@ -59,7 +59,7 @@ function getSong() {
 
 io.on("connection", socket => {
   console.log("connect!");
-  setInterval(() => {socket.emit("update",radio);},100);
+  setInterval(() => {socket.emit("update",radio);},500);
 });
 
 function play(connection,m) {
