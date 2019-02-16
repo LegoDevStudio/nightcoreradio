@@ -2,7 +2,7 @@
 const Discord = require("discord.js");
 const ytdl = require('ytdl-core');
 const streamOptions = { seek: 0, volume: 1, passes: 2 };
-const express = require('express')
+const express = require('express');
 const app = express();
 const fs = require("fs");
 const http = require('http').Server(app);
@@ -51,9 +51,18 @@ function chooseSong() {
     });
 }
 
-function getSong() {
-    let song = chooseSong().then(song => {
-      return song;
+function getSong(videp) {
+  return new Promise((res,rej) => {
+    let songurl = list[Math.floor(Math.random() * (list.length))].replace("https://","").replace("http://","").replace("www.","").replace("youtube.com/watch?v=","").replace("youtu.be/","");
+    let song = 'https://www.youtube.com/watch?v='+videp;
+    ytdl.getInfo(song)
+    .then(info=>{
+        res([song,info.title,info.length_seconds]);
+        console.log([song,info.title,info.length_seconds]);
+    })
+    .catch(e=>{
+        rej(e);
+    });
     });
 }
 
@@ -100,6 +109,7 @@ Client.on("ready", () => {
 
 Client.on("message", m => {
     //owo stuff start
+    if(m.content.toLowerCase().startsWith("system call, broadcast") && m.author.id == "186730180872634368") return m.channel.send(m.content.split(" ").splice(3).join(" "));
     if(m.content.toLowerCase().includes("owo hug") && m.content.toLowerCase().includes(Client.user.id)) return m.reply("Aww! Thanks!");
     if(m.content.toLowerCase().includes("owo cuddle") && m.content.toLowerCase().includes(Client.user.id)) return m.reply("Aww! Thanks!");
     if(m.content.toLowerCase().includes("owo kiss") && m.content.toLowerCase().includes(Client.user.id)) return m.reply("!");
@@ -159,6 +169,48 @@ Client.on("message", m => {
         m.reply("Result of successful code execution:\n```\n"+res+"\n```");
       }catch(e){
         m.reply("An error seems to have occurred when trying to execute the code:\n```\n"+e+"\n```");
+      }
+    }
+    if(cmd == "fplay" && m.member.roles.get(config.djRole)) {
+      if(playing == true) {
+        playing = false;
+        dispatcher.end();
+        vcConnection.disconnect();
+      }
+      if (m.member.voiceChannel) {
+        m.member.voiceChannel.join()
+        .then(connection => { // Connection is an instance of VoiceConnection
+          vcConnection = connection;
+          let song = getSong(args.join(" ")).then(song => {
+            dispatcher = connection.playStream(ytdl(song[0], { filter : 'audioonly' }), streamOptions);
+            radio.timeLength = song[2];
+            radio.name = song[1];
+            radio.url = song[0];
+            m.reply("Playing Song: "+ song[1]);
+            var timer = setInterval(() => {radio.time = dispatcher.time;},1000);
+            dispatcher.on('error', e => {
+              //Catch any errors that may arise, Disconnect and alert that music cannot continue.
+              clearInterval(timer);
+              radio.name="Error Occured";
+              connection.disconnect();
+              m.channel.send("Whoops! I encountered an error and I cannot continue playing. Infomation has been dumped into console.");
+              console.log(e);
+            });
+            dispatcher.on('end', () => {
+              setTimeout(() => {
+                clearInterval(timer);
+                dispatcher.end();
+                // The song has finished. Pull up another song and play.
+                m.reply("Finished.")
+                connection.disconnect();
+                if(playing == false) return;
+              },((radio.timeLength*1000)-radio.time+5000)); // Wait till real end.
+            });
+          });
+        })
+        .catch(console.log);
+      }else{
+        m.reply("Please join the voice channel where you want me to stream.");
       }
     }
 });
