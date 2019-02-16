@@ -7,6 +7,7 @@ const app = express();
 const fs = require("fs");
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
+var sa = require("superagent");
 
 //DATA FOR WEBPAGE
 var radio = {"name":"Not Playing","timeLength":0,"time":0,"url":""};
@@ -104,6 +105,14 @@ var Client = new Discord.Client();
 //READY EVENT.
 Client.on("ready", () => {
     console.log("Online.");
+    sa.get("https://silk-skunk.glitch.me/version/nr")
+    .end((err,res) => {
+    if(err||!res.ok) {console.log("Failed to check for update");}else{
+      if(JSON.parse(JSON.stringify(res.body))[1] != config.numericVersion) {
+        Client.guilds.get("489619012825645069").channels.get("511275271807172610").send("***__Hmm... Something doesn't seem right__***\nSeems like i'm out of date! Version *__"+JSON.parse(JSON.stringify(res.body))[0]+"__* came out. I'm only on version *__" + config.version + "__*!");
+      }
+    }
+  });
 });
 
 
