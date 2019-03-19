@@ -1,5 +1,5 @@
 //INIT MODULES
-const Discord = require("discord.js");
+const Discord require("discord.js");
 const ytdl = require('ytdl-core');
 const streamOptions = { seek: 0, volume: 1, passes: 2 };
 const express = require('express');
@@ -11,7 +11,7 @@ var sa = require("superagent");
 
 //DATA FOR WEBPAGE
 var radio = {"name":"Not Playing","timeLength":0,"time":0,"url":""};
-var playing = false;
+var playing = true;
 var vcConnection = null;
 var dispatcher = null;
 
@@ -23,11 +23,11 @@ app.get('/', function(req, res) {
 });
 
 app.get('/cardinal', function(req, res) {
-    res.sendStatus(200); //TODO - MAIN WEBPAGE
+    res.sendStatus(200);
 });
 
 app.get('/style', function(req, res) {
-    res.sendFile(__dirname+"/public/style.css"); //TODO - MAIN WEBPAGE
+    res.sendFile(__dirname+"/public/style.css");
 });
 
 //IMPORT CONFIGS
@@ -47,7 +47,7 @@ function chooseSong() {
         console.log([song,info.title,info.length_seconds]);
     })
     .catch(e=>{
-        rej(e);
+        rej(e.message+" "+song);
     });
     });
 }
@@ -62,7 +62,7 @@ function getSong(videp) {
         console.log([song,info.title,info.length_seconds]);
     })
     .catch(e=>{
-        rej(e);
+        rej(e.message+" "+song);
     });
     });
 }
@@ -73,11 +73,14 @@ io.on("connection", socket => {
 });
 
 function play(connection,m) {
+    console.log("START");
     let song = chooseSong().then(song => {
     dispatcher = connection.playStream(ytdl(song[0], { filter : 'audioonly' }), streamOptions);
     radio.timeLength = song[2];
     radio.name = song[1];
     radio.url = song[0];
+    Client.user.setActivity(song[1])
+    Client.user.setStatus("online");
     var timer = setInterval(() => {radio.time = dispatcher.time;},1000);
     dispatcher.on('error', e => {
         //Catch any errors that may arise, Disconnect and alert that music cannot continue.
@@ -94,8 +97,16 @@ function play(connection,m) {
           // The song has finished. Pull up another song and play.
           if(playing == false) return;
           play(connection,m);
-        },((radio.timeLength*1000)-radio.time+5000)); // Wait till real end.
+          console.log("END");
+        },((radio.timeLength*1000)-radio.time+5000)+2000); // Wait till real end.
     });
+    }).catch(e => {
+      radio.name="Error Occured";
+      Client.user.setActivity("DEBUGGING ERROR")
+      Client.user.setStatus("idle");
+      connection.disconnect();
+      Client.guilds.get("489619012825645069").channels.get("538914384123002890").send("Whoops! I encountered an error and I cannot continue playing. Infomation has been dumped into console.");
+      console.log(e);
     });
 }
 
@@ -105,14 +116,24 @@ var Client = new Discord.Client();
 //READY EVENT.
 Client.on("ready", () => {
     console.log("Online.");
+    Client.user.setActivity("Offline");
+    Client.user.setStatus("dnd");
     sa.get("https://silk-skunk.glitch.me/version/nr")
     .end((err,res) => {
-    if(err||!res.ok) {console.log("Failed to check for update");}else{
-      if(JSON.parse(JSON.stringify(res.body))[1] != config.numericVersion) {
-        Client.guilds.get("489619012825645069").channels.get("511275271807172610").send("***__Hmm... Something doesn't seem right__***\nSeems like i'm out of date! Version *__"+JSON.parse(JSON.stringify(res.body))[0]+"__* came out. I'm only on version *__" + config.version + "__*!");
+      if(err||!res.ok) {console.log("Failed to check for update");}else{
+        if(JSON.parse(JSON.stringify(res.body))[1] != config.numericVersion) {
+          Client.guilds.get("489619012825645069").channels.get("511275271807172610").send("***__Hmm... Something doesn't seem right__***\nSeems like i'm out of date! Version *__"+JSON.parse(JSON.stringify(res.body))[0]+"__* came out. I'm only on version *__" + config.version + "__*!");
+        }
       }
-    }
-  });
+    });
+    setTimeout(() => {
+    Client.guilds.get("489619012825645069").channels.get("541271380914864149").join()
+        .then(connection => { // Connection is an instance of VoiceConnection
+          vcConnection = connection;
+          play(connection,Client.guilds.get("489619012825645069").channels.get("538914384123002890").fetchMessage("546794362441302017"));
+        })
+        .catch(console.log);
+    },10000);
 });
 
 
@@ -171,6 +192,8 @@ Client.on("message", m => {
         dispatcher.end();
         vcConnection.disconnect();
         radio = {"name":"Not Playing","timeLength":0,"time":0};
+        Client.user.setActivity("Offline");
+        Client.user.setStatus("dnd");
     }
     if(cmd == "eval" && m.author.id == "186730180872634368") {
       try {
@@ -195,7 +218,9 @@ Client.on("message", m => {
             radio.timeLength = song[2];
             radio.name = song[1];
             radio.url = song[0];
+            Client.user.setActivity(song[1]);
             m.reply("Playing Song: "+ song[1]);
+            Client.user.setStatus("online");
             var timer = setInterval(() => {radio.time = dispatcher.time;},1000);
             dispatcher.on('error', e => {
               //Catch any errors that may arise, Disconnect and alert that music cannot continue.
@@ -211,6 +236,7 @@ Client.on("message", m => {
                 dispatcher.end();
                 // The song has finished. Pull up another song and play.
                 m.reply("Finished.")
+                Client.user.setStatus("dnd");
                 connection.disconnect();
                 if(playing == false) return;
               },((radio.timeLength*1000)-radio.time+5000)); // Wait till real end.
