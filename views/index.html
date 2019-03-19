@@ -43,7 +43,7 @@
               console.log("recieved: " + JSON.stringify(radio));
               radio.time = (radio.time)/1000;
               radio.timeLength = radio.timeLength;
-              let length = [Math.floor((radio.timeLength / 60) % 60),Math.floor((radio.timeLength-2)%60)];
+              let length = [Math.floor((radio.timeLength / 60) % 60),Math.floor((radio.timeLength)%60)];
               let time = [Math.floor(radio.time/60),Math.floor(radio.time%60)];
               document.getElementById("name").innerHTML = radio.name;
               if(length[1]<=9) length[1] = "0"+length[1];
